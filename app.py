@@ -30,22 +30,17 @@ uploaded_file = st.file_uploader(
     type=["png", "jpg", "jpeg"]
 )
 
-
-# PROCESSING
+## Inicio
 
 
 if uploaded_file is not None:
 
-    # PIL → NumPy
     image = Image.open(uploaded_file)
 
     image_np = np.array(image)
 
-    # Convertir a escala de grises
     gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
 
-  
-    # FILTERS
 
 
     gaussian = cv2.GaussianBlur(gray, (5,5), 0)
@@ -53,7 +48,6 @@ if uploaded_file is not None:
     median = cv2.medianBlur(gray, 5)
 
 
-    # CLAHE
 
 
     clahe = cv2.createCLAHE(
@@ -63,7 +57,6 @@ if uploaded_file is not None:
 
     enhanced = clahe.apply(gray)
 
-    # DISPLAY IMAGES
 
 
     st.markdown("## Procesamiento de Imagen")
@@ -101,7 +94,6 @@ if uploaded_file is not None:
         )
 
 
-    # HISTOGRAMS
 
 
     st.markdown("## Histogramas")
@@ -125,7 +117,6 @@ if uploaded_file is not None:
     st.pyplot(fig)
 
 
-    # METRICS
  
 
     st.markdown("## Métricas de Imagen")
@@ -144,8 +135,6 @@ if uploaded_file is not None:
 
     c3.metric("Contraste", f"{contrast}")
 
- 
-    # BASIC INTERPRETATIONxx    xxxxxxxxxxxxxxxxxxx
 
 
     st.markdown("## Interpretación Preliminar")
