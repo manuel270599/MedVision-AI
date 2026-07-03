@@ -162,6 +162,69 @@ El sistema sigue una arquitectura modular dividida en cuatro capas principales: 
 ## 8. Construcción del Sistema
 ## 9. Modelo de Inteligencia Artificial
 
+El sistema emplea un modelo de Deep Learning basado en la arquitectura DenseNet121, entrenado mediante Transfer Learning y Fine‑Tuning para clasificar radiografías de tórax en tres categorías: Normal, Neumonía y Tuberculosis. A continuación se describe el enfoque conceptual, la estrategia de entrenamiento y las decisiones técnicas que fundamentan su funcionamiento.
+
+### 9.1. Enfoque General: Transfer Learning desde el Dominio Radiológico
+En lugar de entrenar una red neuronal desde cero (lo que requeriría millones de imágenes etiquetadas y semanas de cómputo), se parte de un modelo que ya ha sido entrenado con un volumen masivo de radiografías de tórax. Concretamente, se utiliza la implementación de DenseNet121 proporcionada por la librería TorchXRayVision, cuyos pesos fueron aprendidos a partir de más de 400.000 radiografías procedentes de conjuntos de datos clínicos de referencia (NIH ChestX‑ray14, CheXpert, MIMIC‑CXR, PadChest, entre otros).
+
+Este modelo preentrenado ya ha internalizado características visuales fundamentales para el análisis radiológico: bordes de costillas, siluetas cardíacas, opacidades pulmonares, patrones de consolidación y cavitación, etc. Al partir de este conocimiento, la red no tiene que aprender a “ver” un pulmón desde cero; en su lugar, solo necesita ajustar sus capas finales para especializarse en las tres clases concretas que interesan en este proyecto.
+
+### 9.2. Adaptación a 3 Clases (Fine‑Tuning)
+El modelo original de TorchXRayVision fue diseñado para detectar 18 patologías de forma independiente (cada una con su propia probabilidad). Para nuestro problema, se reemplaza la cabeza de clasificación por una nueva arquitectura que consta de:
+
+- Una capa densa de 1024 a 512 neuronas.
+- Una activación ReLU (que introduce no linealidad).
+- Una capa de Dropout con probabilidad 0.5, que apaga aleatoriamente la mitad de las neuronas durante el entrenamiento para evitar el sobreajuste.
+- Una capa final de 512 a 3 neuronas, que corresponde a las tres clases.
+
+La salida de esta cabeza se procesa con una función Softmax, que convierte las puntuaciones (logits) en probabilidades que suman 1, de modo que cada radiografía recibe una distribución de confianza entre las tres categorías.
+
+### 9.3. Estrategia de Entrenamiento en Dos Fases
+Para aprovechar al máximo el conocimiento preentrenado y evitar dañar las representaciones ya aprendidas, el entrenamiento se divide en dos etapas:
+
+- Fase 1: Entrenamiento de la Cabeza (Backbone Congelado)
+  
+   - **Objetivo:** Enseñar al nuevo clasificador a interpretar las características extraídas por el backbone (las capas convolucionales) y mapearlas a las tres clases.
+   
+   - **Procedimiento:** Se congelan todos los pesos del backbone (no se actualizan) y solo se entrenan los pesos de la cabeza personalizada.
+   
+   - **Duración:** 5 épocas con una tasa de aprendizaje alta (1e‑3), lo que permite que la cabeza se adapte rápidamente.
+
+- Fase 2: Fine‑Tuning (Backbone Descongelado)
+   - **Objetivo:** Ajustar finamente las capas más profundas del backbone para que se especialicen en los patrones específicos de las radiografías del proyecto (consolidaciones neumónicas, cavitaciones tuberculosas, etc.).
+   
+   - **Procedimiento:** Se descongelan todas las capas (o las más profundas) y se entrena todo el modelo con una tasa de aprendizaje diez veces menor (1e‑4). Esto permite realizar ajustes sutiles sin destruir el conocimiento general adquirido en el preentrenamiento.
+   
+   - **Regularización:** Se emplea un scheduler ReduceLROnPlateau que reduce la tasa de aprendizaje si la precisión en validación se estanca, y un mecanismo de Early Stopping con paciencia de 5 épocas, que detiene el entrenamiento cuando la métrica de validación deja de mejorar, previniendo el sobreajuste.
+
+Esta estrategia en dos fases es estándar en Transfer Learning y ha demostrado ser eficaz para adaptar modelos generalistas a tareas específicas con conjuntos de datos de tamaño moderado.
+
+### 9.4. Manejo del Desbalance de Clases
+El conjunto de datos presenta un desbalance significativo: hay muchas más imágenes de neumonía que de tuberculosis y que de normales. Si no se corrige, el modelo tendería a clasificar la mayoría de las imágenes como neumonía, porque es la clase más frecuente.
+
+Para contrarrestar este sesgo, se utiliza una función de pérdida ponderada. Se calculan automáticamente pesos inversamente proporcionales a la frecuencia de cada clase (mediante compute_class_weight con modo 'balanced') y, adicionalmente, se incrementa manualmente el peso de la clase Normal (multiplicado por 1.8). Esta decisión se tomó después de observar que, en pruebas iniciales, muchas imágenes normales eran clasificadas erróneamente como neumonía. Al darle más importancia a la clase Normal durante el entrenamiento, el modelo se ve forzado a prestar atención a las características que distinguen un pulmón sano, reduciendo drásticamente los falsos positivos.
+
+Los pesos finales utilizados son: Normal: 2.65, Neumonía: 0.51, Tuberculosis: 2.82.
+
+### 9.5. Preprocesamiento Específico para la IA
+El modelo fue entrenado con imágenes en formato RGB (3 canales) y con una normalización al rango [0, 1]. Por lo tanto, antes de pasar la imagen a la red, se aplica el siguiente preprocesamiento:
+
+- Redimensionamiento a 224×224 píxeles (tamaño de entrada esperado por DenseNet121).
+- Normalización dividiendo los valores de píxel entre 255.0 para llevarlos al rango [0, 1].
+- Conversión a 3 canales: la imagen en escala de grises se expande a 3 canales replicando el mismo canal tres veces, simulando una imagen RGB.
+
+Es importante destacar que la normalización utilizada no es la que emplea TorchXRayVision por defecto (que usa el rango [-1024, 1024]), sino la que se utilizó durante el entrenamiento del modelo fine‑tuneado. Esta coherencia entre el preprocesamiento de entrenamiento y el de inferencia es crucial para que las predicciones sean fiables.
+
+### 9.6. Explicabilidad: Grad‑CAM
+Uno de los aspectos más críticos en sistemas de apoyo al diagnóstico es la capacidad de explicar por qué la IA ha tomado una determinada decisión. Para ello, se implementa la técnica Grad‑CAM (Gradient‑weighted Class Activation Mapping).
+
+Grad‑CAM utiliza los gradientes de la clase predicha con respecto a la última capa convolucional del modelo (en este caso, denseblock4.denselayer16.conv2). Estos gradientes se promedian para obtener la importancia de cada canal de activación, y se genera un mapa de calor que resalta las regiones de la imagen que más influyeron en la decisión. El mapa se superpone sobre la radiografía original, mostrando en colores cálidos (rojo, amarillo) las áreas de mayor relevancia.
+
+Esta funcionalidad permite al médico verificar si el modelo está enfocándose en zonas anatómicamente coherentes (por ejemplo, una consolidación lobar o una cavitación) o si, por el contrario, está siendo influenciado por artefactos o ruido. Aporta así una capa de transparencia y confianza que es indispensable en entornos clínicos.
+
+### 9.7. Resultados Clave
+El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validación, con un Early Stopping que detuvo el entrenamiento en la época 15. Las pruebas con imágenes reales de las tres clases muestran un rendimiento excelente, con solo 1 error en una muestra de 15 imágenes (precisión del 93.33 % en esa prueba). La confianza mostrada en la interfaz refleja la probabilidad asignada por el modelo; valores del 100 % indican una certidumbre extrema (probabilidad > 99.995 %), lo cual es esperable cuando la imagen es muy representativa y de alta calidad.
+
 
 ## 10. Capturas y evidencia
 
@@ -213,7 +276,7 @@ La interfaz estará disponible en http://localhost:8501.
 
 ---
 
-### 12.Créditos
+### 12. Créditos
 Autor: José Manuel Montalvo Espinoza
 
 Curso: Computación Gráfica
