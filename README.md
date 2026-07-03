@@ -43,15 +43,16 @@ Esta documentación no solo presenta el resultado final del proyecto, sino tambi
    - Explicación del Código Fuente
        - `app.py` – Orquestación y Lógica de Decisión
        - `train.py` – Estrategia de Entrenamiento y Fine-Tuning
-       - `utils/quality_utils.py` – Filtro de Admisión
        - `utils/model_utils.py` – Carga del Modelo y Preprocesamiento para IA
+       - `utils/quality_utils.py` – Filtro de Admisión
        - `utils/gradcam_utils.py` – Explicabilidad Visual
 
 9. Modelo de Inteligencia Artificial
-10. Capturas y evidencia
-11. Ejecución del proyecto
-12. Trabajo Futuro
-13. Créditos
+10. Resultados
+11. Capturas y evidencia
+12. Ejecución del proyecto
+13. Trabajo Futuro
+14. Créditos
 
 <br><br>
 
@@ -242,7 +243,7 @@ Este filtro es crucial para evitar que el modelo de Deep Learning realice predic
 
 ### 8.6 Explicación del Código Fuente
 
-> `app.py`
+## `app.py`
 
 
 ### Carga de la radiografía
@@ -384,7 +385,6 @@ Para aumentar la transparencia del modelo, se genera un mapa de activación **Gr
 
 Esta visualización facilita la interpretación del diagnóstico generado por la inteligencia artificial.
 
----
 
 ### Presentación de resultados
 
@@ -397,6 +397,483 @@ Finalmente, la aplicación muestra al usuario:
 - Un mensaje recordando que el sistema constituye únicamente una herramienta de apoyo clínico y **no reemplaza el criterio médico profesional**.
 
 
+## `train.py`
+
+### Configuración de los hiperparámetros
+
+Se definen los parámetros principales que controlan el entrenamiento del modelo, como el tamaño de las imágenes (`224×224`), el tamaño del lote (*batch size*), el número de épocas y la cantidad de clases a clasificar.
+
+```python
+TRAIN_DIR = "dataset/train"
+VAL_DIR = "dataset/val"
+IMG_SIZE = 224
+BATCH_SIZE = 32
+EPOCHS_PHASE1 = 5
+EPOCHS_PHASE2 = 30
+NUM_CLASSES = 3
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+NUM_WORKERS = 0
+PIN_MEMORY = True if DEVICE.type == "cuda" else False
+```
+
+Estos valores determinan la forma en que el modelo procesa los datos y aprende durante el entrenamiento.
+
+---
+
+### Aumento de datos (Data Augmentation)
+
+Para mejorar la capacidad de generalización del modelo se aplican transformaciones aleatorias sobre las imágenes de entrenamiento, tales como rotaciones, volteos, traslaciones y pequeñas variaciones de brillo y contraste.
+
+```python
+train_transforms = transforms.Compose([
+    transforms.RandomRotation(10),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomAffine(...),
+    transforms.ColorJitter(...)
+])
+```
+
+El objetivo es reducir el sobreajuste y hacer que el modelo sea más robusto frente a pequeñas variaciones presentes en radiografías reales.
+
+---
+
+### Construcción del Dataset
+
+Se implementa una clase personalizada (`ChestXrayDataset`) encargada de cargar automáticamente las imágenes, asignar sus etiquetas y realizar el preprocesamiento necesario antes del entrenamiento.
+
+Entre las operaciones realizadas se encuentran:
+
+- Lectura de la imagen.
+- Conversión a escala de grises.
+- Redimensionamiento a **224×224 píxeles**.
+- Normalización de los valores de intensidad.
+- Conversión de la imagen a un tensor compatible con PyTorch.
+
+---
+
+### Balanceo de clases
+
+Debido a que el conjunto de datos presenta una distribución desigual entre las clases, se calculan pesos mediante:
+
+```python
+    # Pesos de clase ajustados
+    all_labels = train_dataset.labels
+    class_weights = compute_class_weight(
+        class_weight='balanced',
+        classes=np.unique(all_labels),
+        y=all_labels
+    )
+    class_weights[0] = class_weights[0] * 1.8  
+    class_weight_tensor = torch.tensor(class_weights, dtype=torch.float).to(DEVICE)
+    print(f"Pesos de clase ajustados: {class_weights}")
+```
+
+Estos pesos se incorporan a la función de pérdida para dar mayor importancia a las clases con menos ejemplos, reduciendo el sesgo del modelo durante el aprendizaje.
+
+---
+
+### Personalización de la arquitectura
+
+Se utiliza **DenseNet-121** como modelo base y se reemplaza su clasificador original por uno nuevo adaptado a tres clases.
+
+```python
+model.classifier = nn.Sequential(
+    nn.Linear(1024, 512),
+    nn.ReLU(),
+    nn.Dropout(0.5),
+    nn.Linear(512, NUM_CLASSES)
+)
+```
+
+Esta modificación permite reutilizar las características aprendidas por DenseNet mientras se adapta el modelo al problema específico del proyecto.
+
+---
+
+### Entrenamiento en dos fases
+
+El proceso de entrenamiento se divide en dos etapas:
+
+#### Fase 1: Transfer Learning
+
+Se congelan las capas convolucionales y únicamente se entrena el nuevo clasificador.
+
+```python
+for param in model.features.parameters():
+    param.requires_grad = False
+```
+
+#### Fase 2: Fine-Tuning
+
+Una vez entrenado el clasificador, se descongelan todas las capas para permitir un ajuste fino de toda la red neuronal.
+
+```python
+for param in model.features.parameters():
+    param.requires_grad = True
+```
+
+Esta estrategia permite aprovechar el conocimiento previo del modelo y adaptarlo progresivamente al nuevo conjunto de datos.
+
+---
+
+### Ajuste dinámico del aprendizaje
+
+Durante el Fine-Tuning se utiliza un **Learning Rate Scheduler** (`ReduceLROnPlateau`), que disminuye automáticamente la tasa de aprendizaje cuando el rendimiento del modelo deja de mejorar.
+
+Este mecanismo favorece una convergencia más estable y evita cambios bruscos en los pesos de la red.
+
+---
+
+### Early Stopping
+
+Se implementa la técnica de **Early Stopping** para detener automáticamente el entrenamiento cuando la precisión en validación deja de mejorar durante varias épocas consecutivas.
+
+```python
+EARLY_STOP_PATIENCE = 5
+```
+
+Esto ayuda a prevenir el sobreajuste y evita realizar entrenamiento innecesario.
+
+---
+
+### Almacenamiento del mejor modelo
+
+Después de cada época se compara la precisión obtenida con la mejor registrada hasta ese momento. Si el modelo mejora su rendimiento, sus pesos son almacenados automáticamente.
+
+```python
+torch.save(model.state_dict(), "models/best_model_pytorch.pth")
+```
+
+Al finalizar el entrenamiento se recupera el mejor modelo y se guarda como modelo definitivo para ser utilizado posteriormente durante la inferencia en la aplicación.
+
+```python
+    if os.path.exists("models/best_model_pytorch.pth"):
+        model.load_state_dict(torch.load("models/best_model_pytorch.pth", map_location=DEVICE))
+        print(" Cargado el mejor modelo encontrado.")
+    else:
+        print(" No se encontró best_model, guardando el último.")
+
+    torch.save(model.state_dict(), "models/densenet121_finetuned_pytorch.pth")
+    print(" Modelo fine-tuned guardado en 'models/densenet121_finetuned_pytorch.pth'")
+    print(f"Mejor precisión en validación: {best_acc:.4f} ({best_acc*100:.2f}%)")
+```
+
+## `model_utils.py`
+
+El archivo `model_utils.py` concentra las funciones necesarias para cargar el modelo entrenado, preparar las imágenes para la inferencia y obtener las predicciones realizadas por la red neuronal.
+
+---
+
+### Configuración del dispositivo de ejecución
+
+El sistema detecta automáticamente si existe una GPU compatible con CUDA. En caso contrario, utiliza la CPU para realizar la inferencia.
+
+```python
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+```
+
+Esto permite que la aplicación pueda ejecutarse tanto en equipos con aceleración por hardware como en computadoras convencionales.
+
+---
+
+### Carga del modelo entrenado
+
+La función `load_model()` es responsable de cargar el modelo utilizado por la aplicación.
+
+```python
+@st.cache_resource
+def load_model():
+```
+
+Inicialmente se construye la arquitectura **DenseNet-121** y se reemplaza su clasificador por uno de tres salidas correspondientes a las clases:
+
+- Normal
+- Neumonía
+- Tuberculosis
+
+Posteriormente se cargan los pesos obtenidos durante el proceso de entrenamiento.
+
+```python
+model.load_state_dict(...)
+```
+
+El decorador `@st.cache_resource` permite que el modelo se cargue una sola vez durante la ejecución de la aplicación, evitando tiempos de espera innecesarios cada vez que el usuario realiza una nueva predicción.
+
+---
+
+### Mecanismo de respaldo (Fallback)
+
+Si el archivo del modelo entrenado no se encuentra disponible o ocurre algún error durante la carga, el sistema utiliza automáticamente un modelo base preentrenado de **TorchXRayVision**.
+
+```python
+except FileNotFoundError:
+```
+
+Este mecanismo garantiza que la aplicación continúe funcionando incluso cuando el modelo ajustado no pueda cargarse correctamente.
+
+---
+
+### Preprocesamiento de la imagen
+
+Antes de realizar la inferencia, la imagen debe transformarse al formato esperado por la red neuronal.
+
+```python
+def preprocess_for_ai(image_gray):
+```
+
+Durante este proceso se realizan las siguientes operaciones:
+
+- Redimensionamiento de la imagen a **224×224 píxeles**.
+- Normalización de los valores de intensidad entre 0 y 1.
+- Conversión de la imagen de un canal (escala de grises) a tres canales.
+- Conversión a un tensor de PyTorch.
+- Adición de la dimensión correspondiente al lote (*batch*).
+
+Estas transformaciones aseguran la compatibilidad entre la imagen de entrada y la arquitectura DenseNet-121.
+
+---
+
+### Proceso de inferencia
+
+La función `predict()` ejecuta la propagación hacia adelante (*Forward Pass*) del modelo para obtener las probabilidades de cada clase.
+
+```python
+def predict(model, input_tensor):
+```
+
+La inferencia se realiza dentro de un bloque:
+
+```python
+with torch.no_grad():
+```
+
+Esto desactiva el cálculo de gradientes, reduciendo el consumo de memoria y acelerando la ejecución, ya que durante la predicción no es necesario actualizar los pesos del modelo.
+
+Dependiendo del tipo de modelo cargado, se aplica una función de activación diferente:
+
+- **Softmax**, cuando el modelo fue ajustado para clasificar únicamente tres clases.
+- **Sigmoid**, cuando se utiliza el modelo base con múltiples patologías.
+
+---
+
+### Conversión del modelo base a tres clases
+
+Cuando la aplicación utiliza el modelo preentrenado original, este genera probabilidades para **18 patologías diferentes**.
+
+La función `map_to_3_classes()` transforma esas salidas en las tres clases utilizadas por el proyecto.
+
+```python
+def map_to_3_classes(probs_18):
+```
+
+La conversión se realiza mediante las siguientes reglas:
+
+- Se toma directamente la probabilidad correspondiente a **Neumonía**.
+- La probabilidad de **Tuberculosis** se estima utilizando las patologías más relacionadas del modelo base.
+- La probabilidad de **Normal** se calcula como el complemento de la mayor probabilidad patológica.
+
+Finalmente, las tres probabilidades se normalizan para que su suma sea igual a 1, permitiendo interpretarlas como una distribución de probabilidad válida.
+
+Este mecanismo garantiza que la aplicación pueda ofrecer un resultado coherente incluso cuando no se dispone del modelo ajustado específicamente para las tres clases del proyecto.
+
+
+## `quality_utils.py`
+
+El archivo `quality_utils.py` implementa el módulo encargado de evaluar y mejorar la calidad de las radiografías antes de que sean procesadas por el modelo de inteligencia artificial. Su objetivo es evitar que imágenes con baja calidad generen diagnósticos poco confiables.
+
+---
+
+### Cálculo de las métricas de calidad
+
+La función `compute_metrics()` calcula tres indicadores cuantitativos utilizados para evaluar la calidad de una radiografía.
+
+```python
+def compute_metrics(image):
+```
+
+Las métricas calculadas son:
+
+- **Contraste:** medido mediante la desviación estándar de los niveles de intensidad de la imagen.
+- **Nitidez (Sharpness):** estimada mediante la varianza del operador Laplaciano, que cuantifica la presencia de bordes bien definidos.
+- **Entropía:** calcula la cantidad de información contenida en la imagen a partir de la distribución de los niveles de gris.
+
+```python
+contrast = np.std(image)
+gradient = cv2.Laplacian(image, cv2.CV_64F).var()
+entropy = -np.sum(hist * np.log2(hist + 1e-10))
+```
+
+Estas métricas permiten realizar una evaluación objetiva de la calidad de la radiografía antes del proceso de clasificación.
+
+---
+
+### Clasificación del nivel de calidad
+
+La función `get_quality_level()` clasifica automáticamente la imagen según los valores de contraste y nitidez obtenidos.
+
+```python
+def get_quality_level(contrast, gradient):
+```
+
+Se establecen tres niveles de calidad:
+
+- **Reject:** la imagen presenta una calidad insuficiente y no debe ser utilizada para el diagnóstico.
+- **Warning:** la imagen puede analizarse, aunque su calidad podría afectar la confianza del resultado.
+- **Optimal:** la imagen cumple con los criterios necesarios para ser procesada por el modelo.
+
+```python
+if contrast < 15 or gradient < 5.0:
+    return 'reject'
+elif contrast < 30 or gradient < 10.0:
+    return 'warning'
+else:
+    return 'optimal'
+```
+
+Esta clasificación permite decidir automáticamente si la radiografía puede continuar hacia la etapa de inferencia o si debe rechazarse.
+
+---
+
+### Mejora automática de la imagen
+
+Cuando la calidad de la radiografía no es adecuada, la función `apply_auto_enhancement()` aplica un proceso de mejora antes del análisis.
+
+```python
+def apply_auto_enhancement(image_gray):
+```
+
+El procedimiento consta de dos etapas:
+
+#### a) Mejora del contraste mediante CLAHE
+
+```python
+    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+```
+
+Se utiliza el algoritmo **CLAHE (Contrast Limited Adaptive Histogram Equalization)** para incrementar el contraste de forma local sin amplificar excesivamente el ruido. Esta técnica mejora la visibilidad de estructuras anatómicas y detalles presentes en la radiografía.
+
+#### b) Reducción de ruido con filtro bilateral
+
+```python
+    denoised = cv2.bilateralFilter(enhanced, d=9, sigmaColor=75, sigmaSpace=75)
+```
+
+Posteriormente se aplica un **Filtro Bilateral**, cuya principal ventaja es reducir el ruido de la imagen preservando los bordes importantes, evitando la pérdida de información clínica relevante.
+
+---
+
+### Importancia dentro del sistema
+
+El módulo de calidad constituye una etapa previa al diagnóstico y cumple un papel fundamental dentro del flujo de la aplicación, ya que:
+
+- Evalúa objetivamente la calidad de cada radiografía.
+- Clasifica la imagen según criterios previamente definidos.
+- Mejora automáticamente aquellas imágenes cuya calidad puede optimizarse.
+- Reduce la probabilidad de que el modelo procese imágenes deficientes.
+- Incrementa la confiabilidad de las predicciones generadas por la inteligencia artificial.
+
+
+
+## `gradcam_utils.py`
+
+El archivo `gradcam_utils.py` implementa la técnica **Grad-CAM (Gradient-weighted Class Activation Mapping)**, utilizada para proporcionar interpretabilidad a las predicciones del modelo de inteligencia artificial. Su finalidad es mostrar visualmente qué regiones de la radiografía influyeron con mayor intensidad en la decisión tomada por la red neuronal.
+
+---
+
+### Selección de la capa de análisis
+
+La función `generate_gradcam()` recibe como parámetros el modelo entrenado, la imagen de entrada y la clase predicha.
+
+```python
+def generate_gradcam(model, img_tensor, class_idx, layer_name='features.denseblock4.denselayer16.conv2'):
+```
+
+Para generar el mapa de activación se selecciona una de las últimas capas convolucionales de **DenseNet-121**.
+
+```python
+target_layer = model.features.denseblock4.denselayer16.conv2
+```
+
+Esta capa fue elegida porque conserva información espacial suficiente para localizar las regiones relevantes de la imagen, al mismo tiempo que contiene características de alto nivel aprendidas durante el entrenamiento.
+
+---
+
+### Captura de activaciones y gradientes
+
+Se registran dos *hooks* sobre la capa seleccionada:
+
+- **Forward Hook:** almacena los mapas de activación generados durante la propagación hacia adelante.
+- **Backward Hook:** captura los gradientes obtenidos durante la retropropagación.
+
+```python
+    hook_act = target_layer.register_forward_hook(save_activation(layer_name))
+    hook_grad = target_layer.register_backward_hook(save_gradient(layer_name))
+```
+
+Las activaciones representan las características detectadas por la red, mientras que los gradientes indican la importancia de cada una de ellas para la clase predicha.
+
+---
+
+### Retropropagación de la clase predicha
+
+Después de obtener la salida del modelo, se calcula el gradiente únicamente para la clase con mayor probabilidad.
+
+```python
+loss = output[0, class_idx]
+loss.backward()
+```
+
+Este procedimiento permite identificar qué regiones de la imagen contribuyeron de forma más significativa a la decisión del modelo.
+
+---
+
+### Generación del mapa de calor
+
+Una vez obtenidas las activaciones y los gradientes, se calcula el mapa Grad-CAM.
+
+```python
+pooled_grad = torch.mean(grad, dim=(1, 2), keepdim=True)
+heatmap = torch.sum(pooled_grad * act, dim=0)
+```
+
+El proceso consiste en:
+
+- Calcular el promedio de los gradientes de cada mapa de características.
+- Utilizar dichos promedios como pesos para combinar los mapas de activación.
+- Aplicar la función **ReLU**, eliminando las contribuciones negativas.
+- Normalizar los valores para obtener un mapa con intensidades comprendidas entre 0 y 1.
+
+El resultado es un mapa que resalta las zonas con mayor influencia en la predicción realizada por la red neuronal.
+
+---
+
+### Visualización del mapa Grad-CAM
+
+Finalmente, el mapa generado se adapta al tamaño original de la imagen y se convierte en una representación visual utilizando una escala de colores.
+
+```python
+heatmap_colored = cv2.applyColorMap(...)
+```
+
+Posteriormente se superpone sobre la radiografía original mediante una combinación ponderada.
+
+```python
+    superimposed = cv2.addWeighted(img_bgr, 0.6, heatmap_colored, 0.4, 0)
+```
+
+El resultado final muestra simultáneamente la radiografía y las regiones que el modelo consideró más relevantes durante la clasificación.
+
+---
+
+### Importancia dentro del sistema
+
+La incorporación de **Grad-CAM** aporta interpretabilidad al modelo de inteligencia artificial, permitiendo:
+
+- Visualizar las regiones anatómicas que influyeron en la predicción.
+- Facilitar la comprensión del comportamiento del modelo.
+- Incrementar la transparencia del proceso de clasificación.
+- Proporcionar una herramienta de apoyo para validar visualmente los resultados obtenidos.
+
+Esta funcionalidad resulta especialmente útil en aplicaciones médicas, donde comprender el razonamiento del modelo es tan importante como la precisión del diagnóstico.
 
 <br><br>
 
@@ -467,6 +944,17 @@ El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validac
 
 <br><br>
 
+## Resultados
+
+El desarrollo de **MedVision Assist** permitió implementar un sistema funcional para el análisis automático de radiografías de tórax, integrando técnicas de procesamiento de imágenes, evaluación de calidad e inteligencia artificial en una única aplicación.
+
+Durante las pruebas realizadas, el modelo fue capaz de clasificar radiografías en las categorías **Normal**, **Neumonía** y **Tuberculosis**, mostrando además el nivel de confianza asociado a cada predicción.
+
+El módulo de evaluación de calidad permitió identificar imágenes con bajo contraste o nitidez, aplicando un proceso de mejora automática cuando fue posible y bloqueando el diagnóstico en aquellos casos donde la calidad era insuficiente para garantizar resultados confiables.
+
+Asimismo, la incorporación de la técnica **Grad-CAM** permitió visualizar las regiones de la radiografía que influyeron en la decisión del modelo, proporcionando una mayor interpretabilidad y transparencia en el proceso de clasificación.
+
+En conjunto, los resultados obtenidos evidencian que el sistema integra de manera satisfactoria las distintas etapas del flujo de análisis, ofreciendo una herramienta capaz de asistir en la interpretación preliminar de radiografías de tórax dentro de un contexto educativo y de investigación.
 ## 10. Capturas y evidencia
 
 Primer entrenamiento:
