@@ -1,19 +1,29 @@
-# MedVision Assist
+<div align="center">
+
+# MEDVISION ASSIST
+
+<br><br>
+
 
 > Sistema Inteligente para el Análisis y Clasificación de Radiografías de Tórax mediante Procesamiento Digital de Imágenes y Redes Neuronales Convolucionales.
 
-## Descripción
 
 **MedVision Assist** es un proyecto desarrollado como parte del curso **Computación gráfica** de la **Facultad de Ciencias** de la **Universidad Nacional de Ingenieria**, cuyo propósito es integrar técnicas de visión por computadora e inteligencia artificial para apoyar el análisis preliminar de radiografías de tórax.
 
-El proyecto asume métodos clásicos de procesamiento digital de imágenes con modelos de aprendizaje profundo para mejorar la calidad visual de las radiografías y realizar una clasificación automática de enfermedades respiratorias. A lo largo de su desarrollo se abordaron aspectos relacionados con el tratamiento de imágenes médicas, la extracción de información cuantitativa, el diseño de interfaces de usuario y la aplicación de redes neuronales convolucionales mediante aprendizaje por transferencia.
+> El proyecto asume métodos clásicos de procesamiento digital de imágenes con modelos de aprendizaje profundo para mejorar la calidad visual de las radiografías y realizar una clasificación automática de enfermedades respiratorias. A lo largo de su desarrollo se abordaron aspectos relacionados con el tratamiento de imágenes médicas, la extracción de información cuantitativa, el diseño de interfaces de usuario y la aplicación de redes neuronales convolucionales mediante aprendizaje por transferencia.
+
+
+</div>
+
+<br><br>
 
 ## Sobre esta documentación
 
 Esta documentación no solo presenta el resultado final del proyecto, sino también el proceso seguido durante su desarrollo. Cada sección explica las decisiones de diseño, las tecnologías empleadas y la justificación de las soluciones implementadas, permitiendo comprender la evolución del sistema desde su concepción hasta su estado actual.
 
-El objetivo es ofrecer una visión clara y estructurada del proyecto, facilitando tanto su comprensión como su futura extensión o mantenimiento.
----
+> El objetivo es ofrecer una visión clara y estructurada del proyecto, facilitando tanto su comprensión como su futura extensión o mantenimiento.
+
+<br><br>
 
 # Índice
 
@@ -30,19 +40,20 @@ El objetivo es ofrecer una visión clara y estructurada del proyecto, facilitand
    - Histogramas
    - Métricas
    - Interpretación Automática
-   - Explicación del Código Fuente (Archivos y Líneas Clave)**
+   - Explicación del Código Fuente
+       - `app.py` – Orquestación y Lógica de Decisión
+       - `train.py` – Estrategia de Entrenamiento y Fine-Tuning
        - `utils/quality_utils.py` – Filtro de Admisión
        - `utils/model_utils.py` – Carga del Modelo y Preprocesamiento para IA
        - `utils/gradcam_utils.py` – Explicabilidad Visual
-       - `app.py` – Orquestación y Lógica de Decisión
-       - `train.py` – Estrategia de Entrenamiento y Fine-Tuning
+
 9. Modelo de Inteligencia Artificial
 10. Capturas y evidencia
 11. Ejecución del proyecto
 12. Trabajo Futuro
 13. Créditos
 
-
+<br><br>
 
 ## 1. Problema
 
@@ -54,6 +65,7 @@ A estas limitaciones se suman los desafíos propios de la interpretación humana
 
 Frente a esta problemática, surge la necesidad de desarrollar herramientas tecnológicas que permitan mejorar la calidad de las radiografías y proporcionar un apoyo objetivo durante su análisis. En este sentido, el proyecto **MedVision Assist** busca contribuir a esta necesidad mediante la integración de técnicas de Procesamiento Digital de Imágenes e Inteligencia Artificial, permitiendo optimizar la calidad visual de las radiografías, obtener métricas objetivas sobre la imagen y realizar una clasificación automática de enfermedades respiratorias como **Normal**, **Neumonía** y **Tuberculosis**. De esta manera, el sistema pretende servir como una herramienta de apoyo para los profesionales de la salud, facilitando el análisis preliminar de las imágenes y contribuyendo a una toma de decisiones más rápida, consistente y fundamentada.
 
+<br><br>
 
 ## 2. Propuesta
 
@@ -61,6 +73,7 @@ La solución propuesta es MedVision Assist: un sistema inteligente híbrido que 
 (Deep Learning) para la identificación preliminar de neumonía, tuberculosis o normalidad en radiografías de tórax.
 
 
+<br><br>
 
 ## 3. Objetivos
 
@@ -75,6 +88,7 @@ El proyecto tiene como objetivo general desarrollar un sistema inteligente que i
 - La implementación de mapas de calor explicativos (Grad-CAM) que superponen las regiones de activación de la red sobre la radiografía original, brindando transparencia y soporte visual al diagnóstico emitido por el modelo.
 - La evaluación del rendimiento clínico del modelo, obteniendo métricas de Accuracy, Precisión, Recall y F1-Score superiores al **85%** en la detección combinada, cumpliendo con los estándares de la literatura especializada.
 
+<br><br>
 
 ## 4. Estructura del Proyecto
 
@@ -107,6 +121,9 @@ MedVision-AI/
 ├── .gitignore
 └── venv/                 
 ```
+
+<br><br>
+
 ## 5. Flujo de trabajo
 
 1. **El usuario sube una radiografía** (JPG, JPEG, PNG).
@@ -116,6 +133,8 @@ MedVision-AI/
 5. **El modelo DenseNet121** clasifica la imagen en **Normal**, **Neumonía** o **Tuberculosis**.
 6. **Se muestra el diagnóstico** con la confianza ajustada (penalización del 20% si la calidad es `warning`).
 7. **Se genera un mapa de calor Grad-CAM** para visualizar las regiones que influyeron en la decisión.
+
+<br><br>
 
 ## 6. Tecnologías Utilizadas
 
@@ -129,11 +148,13 @@ MedVision-AI/
 | **Matplotlib / NumPy** | Visualización y cálculos numéricos. |
 | **Scikit-learn** | Cálculo de pesos de clase. |
 
+<br><br>
+
 ## 7. Arquitectura 
 El sistema sigue una arquitectura modular dividida en cuatro capas principales: Interfaz de Usuario, Procesamiento de Imágenes, Motor de IA y Explicabilidad. Cada capa tiene una responsabilidad clara y se comunican mediante un flujo secuencial de datos.
 
 ### Componentes Principales:
-### Interfaz de Usuario (Streamlit)
+### Interfaz (Streamlit)
 
 - Permite cargar radiografías (JPG, PNG, JPEG).
 - Muestra la imagen original y la mejorada lado a lado.
@@ -156,10 +177,229 @@ El sistema sigue una arquitectura modular dividida en cuatro capas principales: 
 - Genera un mapa de calor sobre la capa denseblock4.denselayer16.conv2.
 - Superpone las regiones de activación sobre la radiografía para mostrar qué áreas influyeron en la decisión.
 
----
 
+<br><br>
 
 ## 8. Construcción del Sistema
+
+La implementación de MedVision Assist se ha desarrollado siguiendo una arquitectura modular estrictamente desacoplada. Este enfoque permite que cada componente (interfaz, procesamiento, métricas, inteligencia artificial y explicabilidad) pueda ser probado, mejorado o reemplazado de manera independiente .
+
+A continuación, se desglosan los módulos que conforman el núcleo del sistema, detallando su interacción, los fundamentos técnicos y explicacion de código realizado en el proyecto.
+
+### 8.1. Interfaz(Frontend)
+
+La capa de presentación está construida íntegramente con Streamlit, un framework de Python que permite crear aplicaciones web de datos con solo unas pocas líneas de código. La elección de Streamlit fue mas por practicidad teniendo en cuenta que no es algo profesional pero sí mas educativo. 
+
+Características de la Interfaz:
+
+- Carga de Imágenes: Mediante st.file_uploader, el usuario puede arrastrar o seleccionar radiografías en formatos JPG, JPEG o PNG.
+- Visualización Lateral: Se emplean dos columnas (st.columns(2)) para mostrar la imagen Original y la Procesada en paralelo, facilitando la comparación visual inmediata.
+- Panel de Métricas: En la barra lateral (st.sidebar) se despliegan indicadores numéricos de calidad y la interpretación automática.
+- Expansores de Detalle: Componentes como st.expander permiten ocultar/mostrar los histogramas y el código de procesamiento, manteniendo la vista principal despejada.
+- Gestión de Estado: Se utiliza st.session_state para conservar las imágenes y resultados entre interacciones del usuario, evitando recálculos innecesarios.
+
+### 8.2. Procesamiento Digital de Imágenes
+
+El pipeline de procesamiento es el corazón técnico del sistema. Su objetivo es transformar la radiografía cruda (afectada por ruido y bajo contraste) en un insumo de alta calidad, tanto para la percepción humana como para el posterior análisis de la red neuronal. Este proceso se ejecuta en el módulo `quality_utils.py` y sigue una secuencia definida
+
+- CLAHE (clipLimit=2.0, tileGridSize=(8,8)): El límite de contraste en 2.0 evita la sobreamplificación en áreas como el mediastino o el diafragma, donde las densidades son homogéneas. La rejilla de 8x8 garantiza un equilibrio entre detalle local y coherencia global.
+- Filtro Gaussiano (kernel 5x5, σ=0.8): Un kernel de 5x5 con sigma baja (0.8) proporciona un suavizado ligero, eliminando el ruido de alta frecuencia sin desdibujar las consolidaciones neumónicas pequeñas.
+- Filtro de Mediana (kernel 3x3): Suficiente para eliminar el ruido "sal y pimienta" sin afectar el tamaño de las lesiones.
+
+### 8.3. Generación y Análisis de Histogramas
+
+- Se generan dos histogramas superpuestos: el de la imagen original y el de la procesada.
+- El eje X representa los 256 niveles de intensidad (0 = negro, 255 = blanco).
+- El eje Y representa la frecuencia de píxeles en cada nivel.
+
+Interpretación Clínica Automatizada:
+
+- Histograma concentrado en el centro: Indica bajo contraste (pérdida de diferenciación entre tejidos).
+- Histograma desplazado a la izquierda (< 100): Subexposición; las estructuras oscuras (como el corazón) se funden con el fondo.
+- Histograma desplazado a la derecha (> 200): Sobreexposición; los pulmones aparecen "quemados" (blancos), ocultando patologías.
+- Histograma distribuido a lo largo de todo el rango: Calidad óptima; existe diferenciación entre agua, grasa, hueso y aire.
+
+
+
+### 8.4. Métricas usadas en el proyecto
+
+Con el objetivo de evaluar objetivamente la calidad visual de una radiografía y determinar si es adecuada para el análisis mediante inteligencia artificial, el sistema calcula tres métricas fundamentales implementadas en `quality_utils.py`. Estas métricas convierten la evaluación subjetiva de la imagen en indicadores cuantitativos, permitiendo decidir si la radiografía posee la calidad suficiente para ser procesada por el modelo de clasificación.
+
+| **Métrica** | **Fórmula Matemática** | **Implementación** | **Interpretación Clínica** |
+|-------------|------------------------|--------------------|----------------------------|
+| **Contraste** | $$\sigma = \sqrt{\frac{1}{N}\sum_{i=1}^{N}(I_i-\bar{I})^2}$$ | `np.std(image)` | Mide la dispersión de los niveles de intensidad de la imagen. Un valor **mayor a 65** indica una excelente diferenciación entre tejidos (aire, partes blandas y hueso), mientras que un valor **menor a 40** sugiere bajo contraste, dificultando la identificación de estructuras anatómicas y posibles lesiones. |
+| **Nitidez (Sharpness)** | $$\|\nabla I\|=\sqrt{\left(\frac{\partial I}{\partial x}\right)^2+\left(\frac{\partial I}{\partial y}\right)^2}$$ | `cv2.Laplacian(image, cv2.CV_64F).var()` | Se estima mediante la **varianza del operador Laplaciano**, que cuantifica la intensidad de los bordes presentes en la imagen. Valores elevados indican contornos bien definidos (vasos pulmonares, costillas y bordes pleurales), mientras que valores bajos evidencian imágenes borrosas debido al movimiento del paciente o problemas de enfoque. |
+| **Entropía** | $$H=-\sum_{i=0}^{255} p_i \log_2(p_i)$$ | `skimage.measure.shannon_entropy(image)` | Mide la cantidad de información o complejidad presente en la imagen. Radiografías con una distribución uniforme de intensidades presentan una entropía moderada, mientras que patologías como neumonía o tuberculosis incrementan la variabilidad textural y, por consiguiente, el valor de la entropía en las regiones afectadas. |
+
+Estas tres métricas permiten realizar una evaluación integral de la calidad de la radiografía antes de su procesamiento por el modelo de inteligencia artificial. El contraste garantiza una adecuada diferenciación entre estructuras anatómicas, la nitidez verifica la presencia de detalles relevantes para el diagnóstico y la entropía estima la cantidad de información útil contenida en la imagen. La combinación de estos indicadores reduce la probabilidad de analizar imágenes deficientes, mejorando la confiabilidad de las predicciones realizadas por el sistema.
+
+
+### 8.5. Interpretación Automática (Filtro de Admisión)
+
+Esta capa de lógica, alojada en `quality_utils.py`, consume las métricas calculadas y emite un juicio semántico sobre la aptitud de la imagen. No solo informa al usuario, sino que actúa como un "filtro de admisión" para el modelo de IA.
+Este filtro es crucial para evitar que el modelo de Deep Learning realice predicciones sobre insumos de baja calidad, lo que aumentaría la tasa de falsos positivos/negativos.
+
+
+### 8.6 Explicación del Código Fuente
+
+> `app.py`
+
+
+### Carga de la radiografía
+
+El usuario carga una imagen en formato **JPG**, **JPEG** o **PNG** mediante el componente `st.file_uploader()`. Posteriormente, la imagen es decodificada con **OpenCV** y convertida a escala de grises para su procesamiento.
+
+```python
+uploaded_file = st.file_uploader("Cargue una radiografía (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"])
+
+if uploaded_file is not None:
+    # Leer imagen
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+```
+
+---
+
+### Evaluación automática de la calidad
+
+Antes de realizar cualquier diagnóstico, el sistema calcula tres métricas fundamentales de calidad:
+
+- **Contraste**
+- **Nitidez (Sharpness)**
+- **Entropía**
+
+Estas métricas permiten clasificar la radiografía en tres niveles:
+
+-  **Optimal**
+-  **Warning**
+-  **Reject**
+
+```python
+    cont_orig, grad_orig, ent_orig = compute_metrics(img_gray)
+    level_orig = get_quality_level(cont_orig, grad_orig)
+```
+
+---
+
+### Mejora automática de la imagen
+
+Cuando la calidad original es insuficiente, el sistema aplica un proceso automático de mejora utilizando técnicas de procesamiento de imágenes. Posteriormente vuelve a evaluar las métricas para determinar si la imagen mejorada ofrece mejores condiciones para el análisis.
+
+```python
+    img_enhanced = apply_auto_enhancement(img_gray)
+    cont_enh, grad_enh, ent_enh = compute_metrics(img_enhanced)
+    level_enh = get_quality_level(cont_enh, grad_enh)
+```
+
+La versión (original o mejorada) con mayor calidad será utilizada durante la inferencia.
+
+---
+
+### Validación de calidad
+
+Si incluso después del proceso de mejora la imagen continúa clasificándose como **Reject**, el sistema bloquea el diagnóstico para evitar predicciones poco confiables.
+
+```python
+    if final_level == 'reject':
+        st.error("- **DIAGNÓSTICO BLOQUEADO**")
+        st.error("La calidad de la imagen es insuficiente. Cargue una radiografía con mejor exposición y definición.")
+        st.stop()
+```
+
+Esta validación constituye una de las principales características del proyecto, ya que evita que el modelo procese imágenes con calidad insuficiente.
+
+---
+
+### Preprocesamiento e inferencia
+
+La imagen seleccionada es preprocesada para adaptarse al formato requerido por el modelo basado en **TorchXRayVision**.
+
+Posteriormente se realiza la inferencia utilizando **PyTorch**, obteniendo las probabilidades de pertenecer a cada una de las tres clases:
+
+- Normal
+- Neumonía
+- Tuberculosis
+
+```python
+    if st.button(" Ejecutar Diagnóstico", type="primary"):
+        with st.spinner("Cargando modelo y procesando imagen..."):
+            # Cargar modelo
+            model = load_model()
+
+            input_tensor = preprocess_for_ai(final_image)
+            
+            # Inferencia
+            raw_probs = predict(model, input_tensor)
+            
+            if len(raw_probs) == 18:
+                probs = map_to_3_classes(raw_probs)
+            else:
+                probs = raw_probs  # Ya son 3 clases
+            
+            class_names = ['Normal', 'Neumonía', 'Tuberculosis']
+            predicted_class = class_names[np.argmax(probs)]
+            confidence = np.max(probs)
+
+            ...
+```
+
+---
+
+### Ajuste de confianza
+
+Si la imagen presenta una calidad **Warning**, el sistema reduce automáticamente la confianza del diagnóstico para reflejar la incertidumbre asociada a una menor calidad de entrada.
+
+```python
+            if final_level == 'warning':
+                confidence_penalized = confidence * 0.8
+                st.warning(f" Calidad subóptima. Confianza penalizada a {confidence_penalized:.2%}")
+            else:
+                confidence_penalized = confidence
+                st.success(f" Confianza del modelo: {confidence_penalized:.2%}")
+
+
+            ....
+```
+
+Este mecanismo evita presentar resultados con un nivel de certeza excesivo cuando la imagen no cumple completamente los estándares de calidad.
+
+---
+
+### Interpretabilidad mediante Grad-CAM
+
+Para aumentar la transparencia del modelo, se genera un mapa de activación **Grad-CAM**, el cual resalta las regiones de la radiografía que influyeron en la decisión de la red neuronal.
+
+```python
+                ...
+                try:
+                    heatmap = generate_gradcam(model, input_tensor, np.argmax(probs))
+                    st.image(heatmap, caption=f"Grad-CAM: {predicted_class}", use_column_width=True)
+                except Exception as e:
+                    st.warning("No se pudo generar Grad-CAM. Mostrando imagen original.")
+                    st.image(final_image, caption="Imagen analizada", use_column_width=True, channels="GRAY")
+
+                ...
+```
+
+Esta visualización facilita la interpretación del diagnóstico generado por la inteligencia artificial.
+
+---
+
+### Presentación de resultados
+
+Finalmente, la aplicación muestra al usuario:
+
+- La clase predicha.
+- La confianza del modelo.
+- Las probabilidades para cada enfermedad.
+- El mapa Grad-CAM.
+- Un mensaje recordando que el sistema constituye únicamente una herramienta de apoyo clínico y **no reemplaza el criterio médico profesional**.
+
+
+
+<br><br>
+
 ## 9. Modelo de Inteligencia Artificial
 
 El sistema emplea un modelo de Deep Learning basado en la arquitectura DenseNet121, entrenado mediante Transfer Learning y Fine‑Tuning para clasificar radiografías de tórax en tres categorías: Normal, Neumonía y Tuberculosis. A continuación se describe el enfoque conceptual, la estrategia de entrenamiento y las decisiones técnicas que fundamentan su funcionamiento.
@@ -225,6 +465,7 @@ Esta funcionalidad permite al médico verificar si el modelo está enfocándose 
 ### 9.7. Resultados Clave
 El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validación, con un Early Stopping que detuvo el entrenamiento en la época 15. Las pruebas con imágenes reales de las tres clases muestran un rendimiento excelente, con solo 1 error en una muestra de 15 imágenes (precisión del 93.33 % en esa prueba). La confianza mostrada en la interfaz refleja la probabilidad asignada por el modelo; valores del 100 % indican una certidumbre extrema (probabilidad > 99.995 %), lo cual es esperable cuando la imagen es muy representativa y de alta calidad.
 
+<br><br>
 
 ## 10. Capturas y evidencia
 
@@ -253,6 +494,7 @@ Programma en ejecución:
 <img width="1885" height="889" alt="image" src="https://github.com/user-attachments/assets/f3e2800f-f697-40b2-9952-81ce6ee1a7ec" />
 
 
+<br><br>
 
 ## 11. Instalación y Uso
 
@@ -296,8 +538,9 @@ La interfaz estará disponible en http://localhost:8501.
 ---
 
 ### 12. Créditos
-Autor: José Manuel Montalvo Espinoza
 
-Curso: Computación Gráfica
+> Autor: José Manuel Montalvo Espinoza
 
-Universidad Nacional de Ingeniería
+> Curso: Computación Gráfica
+
+> Ciencia de la computación - Universidad Nacional de Ingeniería
