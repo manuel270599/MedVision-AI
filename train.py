@@ -9,7 +9,7 @@ from tqdm import tqdm
 from sklearn.utils.class_weight import compute_class_weight
 from torchvision import transforms
 
-# ------------------- CONFIGURACIÓN -------------------
+# CONFIGURACIÓN
 TRAIN_DIR = "dataset/train"
 VAL_DIR = "dataset/val"
 IMG_SIZE = 224
@@ -88,7 +88,7 @@ def main():
     model_path = "models/backup_model.pth"
     if os.path.exists(model_path):
         print(f"Cargando modelo desde {model_path}...")
-        # Crear arquitectura vacía
+        ###Crear arquitectura vacía
         model = xrv.models.DenseNet(in_channels=3, weights=None)
         model.classifier = nn.Sequential(
             nn.Linear(1024, 512),
@@ -97,7 +97,7 @@ def main():
             nn.Linear(512, NUM_CLASSES)
         )
         model.load_state_dict(torch.load(model_path, map_location=DEVICE), strict=False)
-        print("✅ Modelo cargado desde backup.")
+        print(" Modelo cargado desde backup.")
     else:
         print("No se encontró backup. Creando modelo desde cero...")
 
@@ -118,7 +118,7 @@ def main():
 
     criterion = nn.CrossEntropyLoss(weight=class_weight_tensor)
     optimizer = torch.optim.Adam(model.classifier.parameters(), lr=1e-3)
-
+#####
     print("--- FASE 1: Reentrenando cabeza (capas congeladas) ---")
     for epoch in range(EPOCHS_PHASE1):
         model.train()
@@ -144,7 +144,7 @@ def main():
                 correct += (predicted == labels).sum().item()
         print(f"Epoch {epoch+1}: Loss={train_loss/len(train_loader):.4f}, Val Acc={correct/total:.4f}")
 
-    # ------------------- FASE 2: FINE-TUNING (descongelar todo) -------------------
+##########
     print("--- FASE 2: Fine-Tuning (descongelar capas) ---")
     for param in model.features.parameters():
         param.requires_grad = True
@@ -194,7 +194,7 @@ def main():
                 print(f" Early stopping en época {EPOCHS_PHASE1 + epoch + 1}")
                 break
 
-    # GUARDAR MODELO FINAL -------------------
+    # --GUARDAR MODELO FINAL--
     if os.path.exists("models/best_model_pytorch.pth"):
         model.load_state_dict(torch.load("models/best_model_pytorch.pth", map_location=DEVICE))
         print(" Cargado el mejor modelo encontrado.")
