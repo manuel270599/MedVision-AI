@@ -50,8 +50,8 @@ Esta documentación no solo presenta el resultado final del proyecto, sino tambi
 9. Modelo de Inteligencia Artificial
 10. Resultados
 11. Capturas y evidencia
-12. Ejecución del proyecto
-13. Trabajo Futuro
+12. Trabajo Futuro
+13. Ejecución del proyecto
 14. Créditos
 
 <br><br>
@@ -997,7 +997,18 @@ Programma en ejecución:
 
 <br><br>
 
-## 12. Instalación y Uso
+
+### 12. Trabajo futuro
+
+Como trabajo futuro, se plantea incrementar el tamaño y la diversidad del conjunto de datos para mejorar la capacidad de generalización del modelo y reducir posibles sesgos en las predicciones. Asimismo, sería conveniente incorporar nuevas patologías pulmonares, permitiendo que el sistema realice un análisis más completo de las radiografías de tórax.
+
+Otra posible mejora consiste en optimizar la arquitectura del modelo mediante el uso de técnicas más recientes de aprendizaje profundo, así como realizar procesos de ajuste de hiperparámetros para incrementar el rendimiento y la precisión de la clasificación.
+
+También se propone fortalecer el módulo de evaluación de calidad de imagen incorporando métricas adicionales y técnicas más avanzadas de mejora automática, con el fin de garantizar que únicamente se analicen imágenes con condiciones adecuadas para el diagnóstico.
+
+Finalmente, se considera importante realizar una validación clínica del sistema con la participación de profesionales de la salud y evaluar su integración con plataformas hospitalarias o sistemas de información médica, permitiendo que la herramienta evolucione hacia un entorno de apoyo al diagnóstico más robusto y confiable.
+
+## 13. Instalación y Uso
 
 ### Requisitos
 - Python 3.9 o superior.
@@ -1038,10 +1049,9 @@ La interfaz estará disponible en http://localhost:8501.
 
 ---
 
-### 13. Créditos
 
-> Autor: José Manuel Montalvo Espinoza
+### 14. Créditos
 
-> Curso: Computación Gráfica
+>Facultad de Ciencias - Ciencia de la Computación
 
-> Ciencia de la computación - Universidad Nacional de Ingeniería
+> Universidad Nacional de Ingeniería
