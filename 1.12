@@ -1,0 +1,13 @@
+Collecting scipy
+  Using cached scipy-1.18.0-cp312-cp312-win_amd64.whl.metadata (61 kB)
+Collecting numpy<2.8,>=2.0.0 (from scipy)
+  Using cached numpy-2.5.0-cp312-cp312-win_amd64.whl.metadata (6.6 kB)
+Using cached scipy-1.18.0-cp312-cp312-win_amd64.whl (36.6 MB)
+Using cached numpy-2.5.0-cp312-cp312-win_amd64.whl (12.4 MB)
+Installing collected packages: numpy, scipy
+  Attempting uninstall: numpy
+    Found existing installation: numpy 1.26.4
+    Uninstalling numpy-1.26.4:
+      Successfully uninstalled numpy-1.26.4
+
+Successfully installed numpy-2.5.0 scipy-1.18.0

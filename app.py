@@ -1,157 +1,130 @@
 import streamlit as st
 import cv2
 import numpy as np
-from PIL import Image
-import matplotlib.pyplot as plt
+import torch
+from utils.quality_utils import compute_metrics, get_quality_level, apply_auto_enhancement
+from utils.model_utils import load_model, preprocess_for_ai, predict, map_to_3_classes, DEVICE
+from utils.gradcam_utils import generate_gradcam
 
-logo = Image.open("Images/simbolo-de-la-medicina.png")
+# Configuración de página
+st.set_page_config(page_title="MedVision Assist", layout="wide", page_icon="Images/simbolo-de-la-medicina.png")
+st.title(" MedVision Assist")
+st.markdown("#### Sistema Inteligente para el Análisis y Clasificación de Radiografías de Tórax")
 
-st.set_page_config(
-    page_title="MedVision Assist",
-    page_icon=logo,
-    layout="wide"
-)
+st.sidebar.markdown("---")
+st.sidebar.warning("- **Uso exclusivamente educativo**\n\nEste sistema es un prototipo de apoyo. No reemplaza el juicio clínico. Consulte siempre a un profesional de la salud.")
+st.sidebar.markdown("---")
+st.sidebar.info(f"Dispositivo: {'GPU (CUDA)' if torch.cuda.is_available() else 'CPU'}")
+st.sidebar.caption("MedVision Assist v3.0 - PyTorch + TorchXRayVision")
 
-col1, col2 = st.columns([1,7])
-
-with col1:
-    st.image("Images/simbolo-de-la-medicina.png", width=100)
-
-
-with col2:
-    st.markdown(
-        "<h1 style='color:#00BFFF;'>MedVision Assist</h1>",
-        unsafe_allow_html=True
-    )
-    st.subheader("Sistema Inteligente de Análisis de Radiografías")
-
-uploaded_file = st.file_uploader(
-    "Sube una radiografía",
-    type=["png", "jpg", "jpeg"]
-)
-
-## Inicio
-
+# Carga de imagen
+uploaded_file = st.file_uploader("Cargue una radiografía (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-
-    image = Image.open(uploaded_file)
-
-    image_np = np.array(image)
-
-    gray = cv2.cvtColor(image_np, cv2.COLOR_BGR2GRAY)
-
-
-
-    gaussian = cv2.GaussianBlur(gray, (5,5), 0)
-
-    median = cv2.medianBlur(gray, 5)
-
-
-
-
-    clahe = cv2.createCLAHE(
-        clipLimit=2.0,
-        tileGridSize=(8,8)
-    )
-
-    enhanced = clahe.apply(gray)
-
-
-
-    st.markdown("## Procesamiento de Imagen")
-
+    # Leer imagen
+    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+    img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    
+    # calidad original ---
+    cont_orig, grad_orig, ent_orig = compute_metrics(img_gray)
+    level_orig = get_quality_level(cont_orig, grad_orig)
+    
+    # mejora_automatica ---
+    img_enhanced = apply_auto_enhancement(img_gray)
+    cont_enh, grad_enh, ent_enh = compute_metrics(img_enhanced)
+    level_enh = get_quality_level(cont_enh, grad_enh)
+    
+    # --- Decisión sobre qué imagen usar ---
+    use_enhanced = False
+    final_level = level_orig
+    if level_orig == 'reject' and (level_enh == 'warning' or level_enh == 'optimal'):
+        use_enhanced = True
+        final_level = level_enh
+    elif level_orig == 'warning' and level_enh == 'optimal':
+        use_enhanced = True
+        final_level = 'optimal'
+    
+    final_image = img_enhanced if use_enhanced else img_gray
+    
+    # --- Mostrar imágenes lado a lado ---
+    st.markdown("---")
     col1, col2 = st.columns(2)
-
     with col1:
-        st.image(
-            gray,
-            caption="Imagen Original",
-            use_container_width=True
-        )
-
+        st.subheader("- Original -")
+        st.image(img_gray, use_column_width=True, channels="GRAY")
+        st.metric("Contraste", f"{cont_orig:.2f}")
+        st.metric("Nitidez", f"{grad_orig:.2f}")
+        estado_orig = "- Óptimo" if level_orig=='optimal' else ("- Advertencia" if level_orig=='warning' else "- Rechazado")
+        st.metric("Estado", estado_orig)
     with col2:
-        st.image(
-            enhanced,
-            caption="CLAHE",
-            use_container_width=True
-        )
-
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.image(
-            gaussian,
-            caption="Gaussian Blur",
-            use_container_width=True
-        )
-
-    with col4:
-        st.image(
-            median,
-            caption="Median Filter",
-            use_container_width=True
-        )
-
-
-
-
-    st.markdown("## Histogramas")
-
-    fig, axes = plt.subplots(2, 2, figsize=(12,8))
-
-    axes[0,0].hist(gray.ravel(), bins=256)
-    axes[0,0].set_title("Original")
-
-    axes[0,1].hist(enhanced.ravel(), bins=256)
-    axes[0,1].set_title("CLAHE")
-
-    axes[1,0].hist(gaussian.ravel(), bins=256)
-    axes[1,0].set_title("Gaussian")
-
-    axes[1,1].hist(median.ravel(), bins=256)
-    axes[1,1].set_title("Median")
-
-    plt.tight_layout()
-
-    st.pyplot(fig)
-
-
- 
-
-    st.markdown("## Métricas de Imagen")
-
-    mean_intensity = np.mean(gray)
-
-    std_intensity = np.std(gray)
-
-    contrast = gray.max() - gray.min()
-
-    c1, c2, c3 = st.columns(3)
-
-    c1.metric("Brillo promedio", f"{mean_intensity:.2f}")
-
-    c2.metric("Desviación estándar", f"{std_intensity:.2f}")
-
-    c3.metric("Contraste", f"{contrast}")
-
-
-
-    st.markdown("## Interpretación Preliminar")
-
-    if contrast < 100:
-        st.warning(
-            "La imagen presenta bajo contraste. "
-            "Se recomienda mejora de intensidad."
-        )
-
+        st.subheader("- Mejorada (Automática)")
+        st.image(img_enhanced, use_column_width=True, channels="GRAY")
+        st.metric("Contraste", f"{cont_enh:.2f}")
+        st.metric("Nitidez", f"{grad_enh:.2f}")
+        estado_enh = "- Óptimo" if level_enh=='optimal' else ("- Advertencia" if level_enh=='warning' else "- Rechazado")
+        st.metric("Estado", estado_enh)
+    
+    if use_enhanced:
+        st.info(" Mejora automática aplicada. La imagen mejorada se usará para el diagnóstico.")
     else:
-        st.success(
-            "La imagen presenta un rango de contraste adecuado."
-        )
+        st.success(" La imagen original cumple con los estándares de calidad.")
+    
+    st.markdown("---")
+    
+    # --- Bloqueo por calidad ---
+    if final_level == 'reject':
+        st.error("- **DIAGNÓSTICO BLOQUEADO**")
+        st.error("La calidad de la imagen es insuficiente. Cargue una radiografía con mejor exposición y definición.")
+        st.stop()
+    
+    if st.button(" Ejecutar Diagnóstico", type="primary"):
+        with st.spinner("Cargando modelo y procesando imagen..."):
+            # Cargar modelo
+            model = load_model()
 
-    st.info(
-        "El preprocessing fue aplicado correctamente. "
-        "La imagen está lista para etapas posteriores "
-        "de segmentación y análisis profundo."
-    )
+            input_tensor = preprocess_for_ai(final_image)
+            
+            # Inferencia
+            raw_probs = predict(model, input_tensor)
+            
+            if len(raw_probs) == 18:
+                probs = map_to_3_classes(raw_probs)
+            else:
+                probs = raw_probs  # Ya son 3 clases
+            
+            class_names = ['Normal', 'Neumonía', 'Tuberculosis']
+            predicted_class = class_names[np.argmax(probs)]
+            confidence = np.max(probs)
+            
+            if final_level == 'warning':
+                confidence_penalized = confidence * 0.8
+                st.warning(f" Calidad subóptima. Confianza penalizada a {confidence_penalized:.2%}")
+            else:
+                confidence_penalized = confidence
+                st.success(f" Confianza del modelo: {confidence_penalized:.2%}")
+            
+            # --- Mostrar resultados ---
+            st.markdown("---")
+            st.subheader(" Resultado del Análisis")
+            
+            col_r1, col_r2 = st.columns([2, 1])
+            with col_r1:
+                st.markdown(f"###  **{predicted_class}**")
+                st.markdown(f"**Confianza ajustada:** {confidence_penalized:.2%}")
+                prob_df = {class_names[i]: probs[i] for i in range(3)}
+                st.bar_chart(prob_df)
+            with col_r2:
+                # Grad-CAM
+                try:
+                    heatmap = generate_gradcam(model, input_tensor, np.argmax(probs))
+                    st.image(heatmap, caption=f"Grad-CAM: {predicted_class}", use_column_width=True)
+                except Exception as e:
+                    st.warning("No se pudo generar Grad-CAM. Mostrando imagen original.")
+                    st.image(final_image, caption="Imagen analizada", use_column_width=True, channels="GRAY")
+            
+            #mensaje final
+            st.warning(" **Recuerde:** Este resultado es una ayuda preliminar. La decisión clínica final debe ser tomada por un profesional de la salud.")
+
+else:
+    st.info("+ Cargue una radiografía para comenzar el análisis.") 
