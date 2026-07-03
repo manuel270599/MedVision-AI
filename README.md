@@ -243,6 +243,8 @@ Este filtro es crucial para evitar que el modelo de Deep Learning realice predic
 
 ### 8.6 Explicación del Código Fuente
 
+---
+
 ## `app.py`
 
 
@@ -395,6 +397,8 @@ Finalmente, la aplicación muestra al usuario:
 - Las probabilidades para cada enfermedad.
 - El mapa Grad-CAM.
 - Un mensaje recordando que el sistema constituye únicamente una herramienta de apoyo clínico y **no reemplaza el criterio médico profesional**.
+
+---
 
 
 ## `train.py`
@@ -557,11 +561,15 @@ Al finalizar el entrenamiento se recupera el mejor modelo y se guarda como model
     print(f"Mejor precisión en validación: {best_acc:.4f} ({best_acc*100:.2f}%)")
 ```
 
+---
+
+
 ## `model_utils.py`
 
 El archivo `model_utils.py` concentra las funciones necesarias para cargar el modelo entrenado, preparar las imágenes para la inferencia y obtener las predicciones realizadas por la red neuronal.
 
 ---
+
 
 ### Configuración del dispositivo de ejecución
 
@@ -675,6 +683,8 @@ Finalmente, las tres probabilidades se normalizan para que su suma sea igual a 1
 
 Este mecanismo garantiza que la aplicación pueda ofrecer un resultado coherente incluso cuando no se dispone del modelo ajustado específicamente para las tres clases del proyecto.
 
+---
+
 
 ## `quality_utils.py`
 
@@ -771,6 +781,7 @@ El módulo de calidad constituye una etapa previa al diagnóstico y cumple un pa
 - Reduce la probabilidad de que el modelo procese imágenes deficientes.
 - Incrementa la confiabilidad de las predicciones generadas por la inteligencia artificial.
 
+---
 
 
 ## `gradcam_utils.py`
@@ -875,6 +886,8 @@ La incorporación de **Grad-CAM** aporta interpretabilidad al modelo de intelige
 
 Esta funcionalidad resulta especialmente útil en aplicaciones médicas, donde comprender el razonamiento del modelo es tan importante como la precisión del diagnóstico.
 
+---
+
 <br><br>
 
 ## 9. Modelo de Inteligencia Artificial
@@ -939,23 +952,23 @@ Grad‑CAM utiliza los gradientes de la clase predicha con respecto a la última
 
 Esta funcionalidad permite al médico verificar si el modelo está enfocándose en zonas anatómicamente coherentes (por ejemplo, una consolidación lobar o una cavitación) o si, por el contrario, está siendo influenciado por artefactos o ruido. Aporta así una capa de transparencia y confianza que es indispensable en entornos clínicos.
 
-### 9.7. Resultados Clave
-El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validación, con un Early Stopping que detuvo el entrenamiento en la época 15. Las pruebas con imágenes reales de las tres clases muestran un rendimiento excelente, con solo 1 error en una muestra de 15 imágenes (precisión del 93.33 % en esa prueba). La confianza mostrada en la interfaz refleja la probabilidad asignada por el modelo; valores del 100 % indican una certidumbre extrema (probabilidad > 99.995 %), lo cual es esperable cuando la imagen es muy representativa y de alta calidad.
-
 <br><br>
 
-## Resultados
+## 10. Resultados
 
-El desarrollo de **MedVision Assist** permitió implementar un sistema funcional para el análisis automático de radiografías de tórax, integrando técnicas de procesamiento de imágenes, evaluación de calidad e inteligencia artificial en una única aplicación.
+El desarrollo del proyecto permitió implementar un sistema funcional para el análisis automático de radiografías de tórax, integrando técnicas de procesamiento de imágenes, evaluación de calidad e inteligencia artificial en una única aplicación tla cual estaba previsto.
 
-Durante las pruebas realizadas, el modelo fue capaz de clasificar radiografías en las categorías **Normal**, **Neumonía** y **Tuberculosis**, mostrando además el nivel de confianza asociado a cada predicción.
+- Durante las pruebas realizadas, el modelo fue capaz de clasificar radiografías en las categorías **Normal**, **Neumonía** y **Tuberculosis**, mostrando además el nivel de confianza asociado a cada predicción.
 
-El módulo de evaluación de calidad permitió identificar imágenes con bajo contraste o nitidez, aplicando un proceso de mejora automática cuando fue posible y bloqueando el diagnóstico en aquellos casos donde la calidad era insuficiente para garantizar resultados confiables.
+- El módulo de evaluación de calidad permitió identificar imágenes con bajo contraste o nitidez, aplicando un proceso de mejora automática cuando fue posible y bloqueando el diagnóstico en aquellos casos donde la calidad era insuficiente para garantizar resultados confiables.
 
-Asimismo, la incorporación de la técnica **Grad-CAM** permitió visualizar las regiones de la radiografía que influyeron en la decisión del modelo, proporcionando una mayor interpretabilidad y transparencia en el proceso de clasificación.
+- Asimismo, la incorporación de la técnica **Grad-CAM** permitió visualizar las regiones de la radiografía que influyeron en la decisión del modelo, proporcionando una mayor interpretabilidad y transparencia en el proceso de clasificación.
 
-En conjunto, los resultados obtenidos evidencian que el sistema integra de manera satisfactoria las distintas etapas del flujo de análisis, ofreciendo una herramienta capaz de asistir en la interpretación preliminar de radiografías de tórax dentro de un contexto educativo y de investigación.
-## 10. Capturas y evidencia
+- Resultados Clave:El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validación, con un Early Stopping que detuvo el entrenamiento en la época 15. Las pruebas con imágenes reales de las tres clases muestran un rendimiento excelente, con solo 1 error en una muestra de 15 imágenes (precisión del 93.33 % en esa prueba). La confianza mostrada en la interfaz refleja la probabilidad asignada por el modelo; valores del 100 % indican una certidumbre extrema (probabilidad > 99.995 %), lo cual es esperable cuando la imagen es muy representativa y de alta calidad.
+
+
+
+## 11. Capturas y evidencia
 
 Primer entrenamiento:
 
@@ -984,7 +997,7 @@ Programma en ejecución:
 
 <br><br>
 
-## 11. Instalación y Uso
+## 12. Instalación y Uso
 
 ### Requisitos
 - Python 3.9 o superior.
@@ -1025,7 +1038,7 @@ La interfaz estará disponible en http://localhost:8501.
 
 ---
 
-### 12. Créditos
+### 13. Créditos
 
 > Autor: José Manuel Montalvo Espinoza
 
