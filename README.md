@@ -228,11 +228,30 @@ El modelo entrenado alcanza una precisión del 98.65 % en el conjunto de validac
 
 ## 10. Capturas y evidencia
 
+Primer entrenamiento:
 
 <img width="1339" height="949" alt="image" src="https://github.com/user-attachments/assets/dc585003-d929-4ba0-ba98-45414a4b56cb" />
 
+Segundo entrenamiento:
 
 <img width="1099" height="863" alt="EntrenamientoCaptura" src="https://github.com/user-attachments/assets/0cbf9081-008d-486f-bb35-3f748ad5f4e5" />
+
+Programma en ejecución:
+
+<img width="1917" height="896" alt="image" src="https://github.com/user-attachments/assets/20adeb48-e5e6-4d59-a428-d71a9dd4b61d" />
+
+
+<img width="1710" height="772" alt="image" src="https://github.com/user-attachments/assets/f5948461-48ed-4a2a-83e7-1f20d296aa6c" />
+
+
+<img width="1884" height="832" alt="image" src="https://github.com/user-attachments/assets/ad38a6c2-8b35-4dba-a427-4c6ec9acff60" />
+
+
+<img width="1818" height="573" alt="image" src="https://github.com/user-attachments/assets/9ac0a6ac-2fac-455c-924e-8acb03526040" />
+
+
+<img width="1885" height="889" alt="image" src="https://github.com/user-attachments/assets/f3e2800f-f697-40b2-9952-81ce6ee1a7ec" />
+
 
 
 ## 11. Instalación y Uso
